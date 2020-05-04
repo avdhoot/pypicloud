@@ -1,15 +1,13 @@
 """ Utilities """
-import posixpath
 import re
 import time
 
 import distlib.locators
 import logging
 import six
-from distlib.locators import Locator, SimpleScrapingLocator
+from distlib.locators import Locator
 from distlib.util import split_filename
 from distlib.wheel import Wheel
-from six.moves.urllib.parse import urlparse  # pylint: disable=F0401,E0611
 
 
 LOG = logging.getLogger(__name__)
@@ -44,31 +42,6 @@ def normalize_name(name):
     # Lifted directly from PEP503:
     # https://www.python.org/dev/peps/pep-0503/#id4
     return re.sub(r"[-_.]+", "-", name).lower()
-
-
-class BetterScrapingLocator(SimpleScrapingLocator):
-
-    """ Layer on top of SimpleScrapingLocator that allows preferring wheels """
-
-    prefer_wheel = True
-
-    def __init__(self, *args, **kw):
-        kw["scheme"] = "legacy"
-        super(BetterScrapingLocator, self).__init__(*args, **kw)
-
-    def locate(self, requirement, prereleases=False, wheel=True):
-        self.prefer_wheel = wheel
-        return super(BetterScrapingLocator, self).locate(requirement, prereleases)
-
-    def score_url(self, url):
-        t = urlparse(url)
-        filename = posixpath.basename(t.path)
-        return (
-            t.scheme == "https",
-            not (self.prefer_wheel ^ filename.endswith(".whl")),
-            "pypi.org" in t.netloc,
-            filename,
-        )
 
 
 # Distlib checks if wheels are compatible before returning them.
